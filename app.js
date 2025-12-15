@@ -12,7 +12,7 @@ app.use(cookieParser());
 app.use(cors({
     origin: [
         "http://localhost:5500",
-        "https://backend-eduproof.vercel.app/"
+        "https://backend-eduproof.vercel.app"
     ],
     credentials: true
 }));
