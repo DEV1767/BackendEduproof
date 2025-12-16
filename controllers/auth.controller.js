@@ -6,6 +6,14 @@ import { ApiResponse } from "../utils/apiresponce.js";
 import jwt from "jsonwebtoken";
 import { generateId } from "../utils/generateId.js";
 
+/* ================= COOKIE OPTIONS ================= */
+const cookieOptions = {
+    httpOnly: true,
+    secure: true,          // REQUIRED on Vercel (HTTPS)
+    sameSite: "None",      // REQUIRED for cross-site
+    path: "/"
+};
+
 /* ================= REGISTER ================= */
 const registerUser = async (req, res) => {
     const { role, data } = req.body;
@@ -37,7 +45,6 @@ const registerUser = async (req, res) => {
             institutionname
         });
     }
-
     else if (role === "hr") {
         const { email, password, name, companyname } = data;
 
@@ -59,7 +66,6 @@ const registerUser = async (req, res) => {
             companyname
         });
     }
-
     else if (role === "institute") {
         const { email, password, name } = data;
 
@@ -77,18 +83,16 @@ const registerUser = async (req, res) => {
             instituteId,
             email,
             password,
-            name,
-
+            name
         });
     }
-
     else {
         throw new Apierror(400, "Invalid role");
     }
 
-    return res.status(201).json(
-        new ApiResponse(201, { id: user._id, role }, "Registered successfully")
-    );
+    return res
+        .status(201)
+        .json(new ApiResponse(201, { id: user._id, role }, "Registered successfully"));
 };
 
 /* ================= LOGIN ================= */
@@ -100,76 +104,37 @@ const loginUser = async (req, res) => {
     }
 
     let user;
+    if (role === "student") user = await Student.findOne({ email });
+    else if (role === "hr") user = await Hr.findOne({ email });
+    else if (role === "institute") user = await Institute.findOne({ email });
+    else throw new Apierror(400, "Invalid role");
 
-    if (role === "student") {
-        user = await Student.findOne({ email });
-    }
-    else if (role === "hr") {
-        user = await Hr.findOne({ email });
-    }
-    else if (role === "institute") {
-        user = await Institute.findOne({ email });
-    }
-    else {
-        throw new Apierror(400, "Invalid role");
-    }
-
-    if (!user) {
-        throw new Apierror(404, `${role} not found`);
-    }
+    if (!user) throw new Apierror(404, `${role} not found`);
 
     const isPasswordValid = await user.isPasswordCorrect(password);
-    if (!isPasswordValid) {
-        throw new Apierror(401, "Invalid credentials");
-    }
+    if (!isPasswordValid) throw new Apierror(401, "Invalid credentials");
 
-    // 🔐 SINGLE ACCESS TOKEN SECRET
     const accessToken = jwt.sign(
-        {
-            _id: user._id,
-            role,
-            email: user.email
-        },
+        { _id: user._id, role, email: user.email },
         process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" }
     );
 
-    // 🔁 KEEP refresh token role-based (OK)
     const refreshToken = user.generateRefreshToken();
-
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
     return res
-        .cookie("accessToken", accessToken, {
-            httpOnly: true,
-            sameSite: "None",
-            secure: true,
-            path: "/",  
-        })
-        .cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            sameSite: "None",
-            secure: true,
-            path: "/",  
-        })
-        .json(
-            new ApiResponse(
-                200,
-                { role },
-                "Login successful"
-            )
-        );
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
+        .status(200)
+        .json(new ApiResponse(200, { role }, "Login successful"));
 };
-
 
 /* ================= REFRESH ================= */
 const refreshAccessToken = async (req, res) => {
     const refreshToken = req.cookies?.refreshToken;
-
-    if (!refreshToken) {
-        throw new Apierror(401, "Refresh token missing");
-    }
+    if (!refreshToken) throw new Apierror(401, "Refresh token missing");
 
     let decoded, user, role;
 
@@ -199,28 +164,16 @@ const refreshAccessToken = async (req, res) => {
         throw new Apierror(401, "Invalid refresh token");
     }
 
-    // 🔐 ISSUE NEW ACCESS TOKEN WITH SINGLE SECRET
     const newAccessToken = jwt.sign(
-        {
-            _id: user._id,
-            role,
-            email: user.email
-        },
+        { _id: user._id, role, email: user.email },
         process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" }
     );
 
     return res
-        .cookie("accessToken", newAccessToken, {
-            httpOnly: true,
-            sameSite: "None",
-            secure: true
-        })
-        .json(
-            new ApiResponse(200, { role }, "Token refreshed")
-        );
+        .cookie("accessToken", newAccessToken, cookieOptions)
+        .json(new ApiResponse(200, { role }, "Token refreshed"));
 };
-
 
 /* ================= LOGOUT ================= */
 const logoutUser = async (req, res) => {
@@ -230,7 +183,9 @@ const logoutUser = async (req, res) => {
     if (role === "hr") await Hr.findByIdAndUpdate(_id, { refreshToken: null });
     if (role === "institute") await Institute.findByIdAndUpdate(_id, { refreshToken: null });
 
-    return res.clearCookie("accessToken").clearCookie("refreshToken")
+    return res
+        .clearCookie("accessToken", cookieOptions)
+        .clearCookie("refreshToken", cookieOptions)
         .json(new ApiResponse(200, {}, "Logged out"));
 };
 
