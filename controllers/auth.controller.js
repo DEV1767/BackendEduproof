@@ -211,8 +211,8 @@ const refreshAccessToken = async (req, res) => {
     return res
         .cookie("accessToken", newAccessToken, {
             httpOnly: true,
-            sameSite: "lax",
-            secure: false
+            sameSite: "None",
+            secure: true
         })
         .json(
             new ApiResponse(200, { role }, "Token refreshed")
@@ -238,4 +238,5 @@ export {
     refreshAccessToken,
     logoutUser
 };
+
 
