@@ -12,7 +12,7 @@ app.use(cookieParser());
 app.use(cors({
     origin: [
         "http://localhost:5500",
-        "https://backend-eduproof-git-main-shivams-projects-5ccde8df.vercel.app"
+        "https://blockchainbasedproject.vercel.app"
     ],
     credentials: true
 }));
