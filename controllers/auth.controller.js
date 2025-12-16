@@ -17,6 +17,7 @@ const cookieOptions = {
 /* ================= REGISTER ================= */
 const registerUser = async (req, res) => {
     const { role, data } = req.body;
+    console.log("REGISTER BODY:", req.body);
 
     if (!role || !data) {
         throw new Apierror(400, "Role and data are required");
@@ -197,6 +198,7 @@ export {
     refreshAccessToken,
     logoutUser
 };
+
 
 
 
