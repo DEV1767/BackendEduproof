@@ -27,7 +27,7 @@ const InstituteSchema = new Schema(
         },
         blockchainwallet: {
             type: String,
-            required: true,
+            required: false,
             unique: true,
             trim: true
         },
@@ -83,3 +83,4 @@ InstituteSchema.methods.generateRefreshToken = function () {
 };
 
 export default mongoose.model("Institute", InstituteSchema);
+
