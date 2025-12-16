@@ -5,7 +5,7 @@ import {
     refreshAccessToken,
     logoutUser
 } from "../controllers/auth.controller.js";
-import { getme } from "../controllers/get.me.js"
+import { getme, getprofile } from "../controllers/get.me.js"
 import { verifyJWT } from "../middleware/auth.middleware.js"
 
 const router = express.Router();
@@ -17,11 +17,7 @@ router.post("/refresh-token", refreshAccessToken);
 router.post("/logout", logoutUser);
 
 //dashboardroutes
-router.get("/me", verifyJWT, (req, res) => {
-    res.json({
-        success: true,
-        user: req.user
-    });
-});
+router.get("/me", verifyJWT, getme);
 
+router.get("/profile", verifyJWT, getprofile)
 export default router;
