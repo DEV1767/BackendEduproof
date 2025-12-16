@@ -144,12 +144,14 @@ const loginUser = async (req, res) => {
         .cookie("accessToken", accessToken, {
             httpOnly: true,
             sameSite: "None",
-            secure: true
+            secure: true,
+            path: "/",  
         })
         .cookie("refreshToken", refreshToken, {
             httpOnly: true,
             sameSite: "None",
-            secure: true
+            secure: true,
+            path: "/",  
         })
         .json(
             new ApiResponse(
@@ -238,5 +240,6 @@ export {
     refreshAccessToken,
     logoutUser
 };
+
 
 
