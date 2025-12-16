@@ -132,7 +132,8 @@ const loginUser = async (req, res) => {
     return res
         .cookie("accessToken", accessToken, {
             httpOnly: true,
-            sameSite: "lax"
+            sameSite: "none",
+            secure:true
         })
         .cookie("refreshToken", refreshToken, {
             httpOnly: true,
