@@ -73,8 +73,9 @@ hrSchema.methods.generateRefreshToken = function () {
             role: "hr"
         },
         process.env.HR_REFRESH_TOKEN_SECRET,
-        { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
+        { expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d" }
     );
 };
 
 export default mongoose.model("Hr", hrSchema);
+
