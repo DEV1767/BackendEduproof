@@ -21,7 +21,7 @@ export const getme = async (req, res) => {
         // STUDENT
         if (user.role === "student") {
             response.student = {
-               studentname:user.studentname,
+               studentname:user.name,
                email:user.email,
                 studentId: user.studentId,
                 institutionname: user.institutionname,
@@ -117,4 +117,5 @@ export const getprofile = async (req, res) => {
         });
     }
 };
+
 
