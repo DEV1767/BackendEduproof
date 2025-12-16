@@ -46,9 +46,11 @@ const registerUser = async (req, res) => {
         });
     }
     else if (role === "hr") {
-        const { email, password, name, companyname } = data;
+        const { email, password, name, companyname,companyName } = data;
 
-        if (!email || !password || !name || !companyname) {
+        const finalcompanyname=companyname||companyName;
+        
+        if (!email || !password || !name || !companyname ||!finalcompanyname) {
             throw new Apierror(400, "All HR fields are required");
         }
 
@@ -195,6 +197,7 @@ export {
     refreshAccessToken,
     logoutUser
 };
+
 
 
 
