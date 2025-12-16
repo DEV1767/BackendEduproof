@@ -17,7 +17,7 @@ const cookieOptions = {
 /* ================= REGISTER ================= */
 const registerUser = async (req, res) => {
     const { role, data } = req.body;
-    console.log("REGISTER BODY:", req.body);
+   
 
     if (!role || !data) {
         throw new Apierror(400, "Role and data are required");
@@ -49,9 +49,9 @@ const registerUser = async (req, res) => {
     else if (role === "hr") {
         const { email, password, name, companyname,companyName } = data;
 
-        const finalcompanyname=companyname||companyName;
+        const finalcompanyname = companyname || companyName;
         
-        if (!email || !password || !name || !companyname ||!finalcompanyname) {
+        if (!email || !password || !name || !finalcompanyname) {
             throw new Apierror(400, "All HR fields are required");
         }
 
@@ -198,6 +198,7 @@ export {
     refreshAccessToken,
     logoutUser
 };
+
 
 
 
