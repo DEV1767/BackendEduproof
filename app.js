@@ -5,7 +5,7 @@ import authRoutes from "./routes/auth.routes.js";
 
 const app = express();
 
-// 🔥🔥 CORS MUST BE FIRST 🔥🔥
+// 🔥 CORS FIRST
 const corsOptions = {
     origin: [
         "https://blockchainbasedproject.vercel.app",
@@ -17,15 +17,14 @@ const corsOptions = {
     credentials: true
 };
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // preflight support
+app.use(cors(corsOptions)); // ✅ enough for preflight
 
-// 🔽 body & cookies AFTER cors
+// body & cookies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// test route
+// test
 app.get("/", (req, res) => {
     res.send("SERVER IS RUNNING");
 });
@@ -34,3 +33,4 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 
 export default app;
+
