@@ -17,8 +17,8 @@ const corsOptions = {
     allowedHeaders: ["Content-Type", "Authorization"]
 };
 
+// ✅ THIS ALONE IS ENOUGH
 app.use(cors(corsOptions));
-app.options("/*", cors(corsOptions)); // ✅ FIXED LINE
 
 /* ================= MIDDLEWARE ================= */
 app.use(express.json());
@@ -33,3 +33,4 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 
 export default app;
+
