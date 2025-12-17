@@ -5,31 +5,22 @@ import { Apierror } from "../utils/apierror.js";
 import { ApiResponse } from "../utils/apiresponce.js";
 import jwt from "jsonwebtoken";
 import { generateId } from "../utils/generateId.js";
-
-/* ================= COOKIE OPTIONS ================= */
-const cookieOptions = {
-    httpOnly: true,
-    secure: true,          // REQUIRED on Vercel (HTTPS)
-    sameSite: "None",      // REQUIRED for cross-site
-    path: "/"
-};
+import { cookieOptions } from "../utils/cookieOptions.js";
 
 /* ================= REGISTER ================= */
 const registerUser = async (req, res) => {
     const { role, data } = req.body;
-   
 
     if (!role || !data) {
-        throw new Apierror(400, "Role and data are required");
+        throw new Apierror(400, "Role and data required");
     }
 
     let user;
 
     if (role === "student") {
         const { email, password, name, institutionname } = data;
-
         if (!email || !password || !name || !institutionname) {
-            throw new Apierror(400, "All student fields are required");
+            throw new Apierror(400, "All fields required");
         }
 
         if (await Student.findOne({ email })) {
@@ -46,13 +37,13 @@ const registerUser = async (req, res) => {
             institutionname
         });
     }
-    else if (role === "hr") {
-        const { email, password, name, companyname,companyName } = data;
 
-        const finalcompanyname = companyname || companyName;
-        
-        if (!email || !password || !name || !finalcompanyname) {
-            throw new Apierror(400, "All HR fields are required");
+    else if (role === "hr") {
+        const { email, password, name, companyname, companyName } = data;
+        const finalCompany = companyname || companyName;
+
+        if (!email || !password || !name || !finalCompany) {
+            throw new Apierror(400, "All fields required");
         }
 
         if (await Hr.findOne({ email })) {
@@ -66,14 +57,14 @@ const registerUser = async (req, res) => {
             email,
             password,
             name,
-          companyname: finalcompanyname
+            companyname: finalCompany
         });
     }
+
     else if (role === "institute") {
         const { email, password, name } = data;
-
         if (!email || !password || !name) {
-            throw new Apierror(400, "All institute fields are required");
+            throw new Apierror(400, "All fields required");
         }
 
         if (await Institute.findOne({ email })) {
@@ -89,13 +80,14 @@ const registerUser = async (req, res) => {
             name
         });
     }
+
     else {
         throw new Apierror(400, "Invalid role");
     }
 
-    return res
-        .status(201)
-        .json(new ApiResponse(201, { id: user._id, role }, "Registered successfully"));
+    return res.status(201).json(
+        new ApiResponse(201, { id: user._id, role }, "Registered successfully")
+    );
 };
 
 /* ================= LOGIN ================= */
@@ -103,79 +95,72 @@ const loginUser = async (req, res) => {
     const { role, email, password } = req.body;
 
     if (!role || !email || !password) {
-        throw new Apierror(400, "Role, email and password are required");
+        throw new Apierror(400, "Role, email and password required");
     }
 
     let user;
     if (role === "student") user = await Student.findOne({ email });
-    else if (role === "hr") user = await Hr.findOne({ email });
-    else if (role === "institute") user = await Institute.findOne({ email });
-    else throw new Apierror(400, "Invalid role");
+    if (role === "hr") user = await Hr.findOne({ email });
+    if (role === "institute") user = await Institute.findOne({ email });
 
-    if (!user) throw new Apierror(404, `${role} not found`);
+    if (!user) throw new Apierror(404, "User not found");
 
-    const isPasswordValid = await user.isPasswordCorrect(password);
-    if (!isPasswordValid) throw new Apierror(401, "Invalid credentials");
+    const isValid = await user.isPasswordCorrect(password);
+    if (!isValid) throw new Apierror(401, "Invalid credentials");
 
     const accessToken = jwt.sign(
         { _id: user._id, role, email: user.email },
         process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" }
+        { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
     );
 
-    const refreshToken = user.generateRefreshToken();
+    const refreshToken = jwt.sign(
+        { _id: user._id, role },
+        process.env.REFRESH_TOKEN_SECRET,
+        { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
+    );
+
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
     return res
         .cookie("accessToken", accessToken, cookieOptions)
         .cookie("refreshToken", refreshToken, cookieOptions)
-        .status(200)
         .json(new ApiResponse(200, { role }, "Login successful"));
 };
 
 /* ================= REFRESH ================= */
 const refreshAccessToken = async (req, res) => {
     const refreshToken = req.cookies?.refreshToken;
-    if (!refreshToken) throw new Apierror(401, "Refresh token missing");
+    if (!refreshToken) throw new Apierror(401, "No refresh token");
 
-    let decoded, user, role;
+    const decoded = jwt.verify(
+        refreshToken,
+        process.env.REFRESH_TOKEN_SECRET
+    );
 
-    try {
-        decoded = jwt.verify(refreshToken, process.env.STUDENT_REFRESH_TOKEN_SECRET);
-        user = await Student.findById(decoded._id);
-        role = "student";
-    } catch { }
-
-    if (!user) {
-        try {
-            decoded = jwt.verify(refreshToken, process.env.HR_REFRESH_TOKEN_SECRET);
-            user = await Hr.findById(decoded._id);
-            role = "hr";
-        } catch { }
-    }
-
-    if (!user) {
-        try {
-            decoded = jwt.verify(refreshToken, process.env.INSTITUTE_REFRESH_TOKEN_SECRET);
-            user = await Institute.findById(decoded._id);
-            role = "institute";
-        } catch { }
-    }
+    let user;
+    if (decoded.role === "student") user = await Student.findById(decoded._id);
+    if (decoded.role === "hr") user = await Hr.findById(decoded._id);
+    if (decoded.role === "institute") user = await Institute.findById(decoded._id);
 
     if (!user || user.refreshToken !== refreshToken) {
         throw new Apierror(401, "Invalid refresh token");
     }
 
     const newAccessToken = jwt.sign(
-        { _id: user._id, role, email: user.email },
+        {
+            _id: user._id,
+            role: decoded.role,
+            email: user.email
+        },
         process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" }
+        { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
     );
 
     return res
         .cookie("accessToken", newAccessToken, cookieOptions)
-        .json(new ApiResponse(200, { role }, "Token refreshed"));
+        .json(new ApiResponse(200, {}, "Token refreshed"));
 };
 
 /* ================= LOGOUT ================= */
@@ -198,10 +183,3 @@ export {
     refreshAccessToken,
     logoutUser
 };
-
-
-
-
-
-
-
