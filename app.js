@@ -17,9 +17,8 @@ const corsOptions = {
     allowedHeaders: ["Content-Type", "Authorization"]
 };
 
-// 🔴 MUST ADD BOTH
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // ✅ THIS FIXES PREFLIGHT
+app.options("/*", cors(corsOptions)); // ✅ FIXED
 
 /* ================= MIDDLEWARE ================= */
 app.use(express.json());
@@ -34,3 +33,4 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 
 export default app;
+
